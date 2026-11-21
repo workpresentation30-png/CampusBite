@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CampusBite — Smart Campus Ordering</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+    }
+    .glass-card {
+      background: rgba(30, 41, 59, 0.88);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+    }
+    .brand-gradient {
+      background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-orange-500 selection:text-white">
+
+  <!-- TOP NAVBAR -->
+  <header class="sticky top-0 z-40 glass-card border-b border-slate-800">
+    <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3 cursor-pointer" onclick="switchView('order')">
+        <!-- GitHub mein apni logo image ka naam 'logo.png' rakh kar upload karein -->
+        <img src="./logo.png" alt="CampusBite Logo" onerror="this.style.display='none'; document.getElementById('fallback-logo').style.display='flex';" class="h-11 w-11 rounded-xl object-contain bg-slate-950 p-1 border border-orange-500/30" />
+        <div id="fallback-logo" style="display:none;" class="h-11 w-11 rounded-xl brand-gradient items-center justify-center font-extrabold text-xl text-white shadow-lg">CB</div>
+        <div>
+          <h1 class="text-xl font-extrabold tracking-tight text-white">Campus<span class="text-orange-500">Bite</span></h1>
+          <p class="text-[11px] text-slate-400 font-medium">QueueLess Campus Pre-Order</p>
+        </div>
+      </div>
+
+      <button type="button" onclick="openAdminModal()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-slate-200 flex items-center gap-1.5 transition">
+        <span>🔒</span> Admin
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT AREA -->
+  <main class="max-w-3xl w-full mx-auto px-4 py-6 flex-1">
+
+    <!-- ==================== CUSTOMER ORDERING VIEW ==================== -->
+    <section id="order-view" class="space-y-6">
+
+      <!-- STEP 1: CANTEEN SELECTION -->
+      <div class="glass-card rounded-2xl p-5 shadow-xl">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="h-6 w-6 rounded-full brand-gradient text-xs font-bold flex items-center justify-center text-white">1</span>
+          <h2 class="text-base font-bold text-white">Select Canteen</h2>
+        </div>
+        <select id="canteen-select" onchange="renderMenu()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm font-semibold text-white focus:outline-none focus:border-orange-500">
+          <option value="Fruit e Junction">🍎 Fruit e Junction (Live Now)</option>
+        </select>
+      </div>
+
+      <!-- STEP 2: CUSTOMER DETAILS -->
+      <div class="glass-card rounded-2xl p-5 shadow-xl space-y-4">
+        <div class="flex items-center gap-2">
+          <span class="h-6 w-6 rounded-full brand-gradient text-xs font-bold flex items-center justify-center text-white">2</span>
+          <h2 class="text-base font-bold text-white">Who is Ordering?</h2>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2.5">
+          <button type="button" onclick="selectRole('Student')" id="role-Student" class="role-btn py-2.5 rounded-xl text-xs font-bold border border-orange-500 bg-orange-500/20 text-orange-400 transition">🎓 Student</button>
+          <button type="button" onclick="selectRole('Faculty')" id="role-Faculty" class="role-btn py-2.5 rounded-xl text-xs font-bold border border-slate-700 bg-slate-900 text-slate-400 transition">👨‍🏫 Faculty</button>
+          <button type="button" onclick="selectRole('Visitor')" id="role-Visitor" class="role-btn py-2.5 rounded-xl text-xs font-bold border border-slate-700 bg-slate-900 text-slate-400 transition">🪪 Visitor</button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1">Full Name *</label>
+            <input type="text" id="cust-name" placeholder="Enter your name" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-orange-500" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1">Phone Number *</label>
+            <input type="tel" id="cust-phone" maxlength="10" placeholder="10-digit mobile number" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-orange-500" />
+          </div>
+        </div>
+
+        <div class="flex items-center gap-4 pt-1">
+          <span class="text-xs font-semibold text-slate-400">Order Mode:</span>
+          <label class="flex items-center gap-1.5 text-xs font-semibold text-slate-200 cursor-pointer">
+            <input type="radio" name="orderType" value="Dine-in" checked class="accent-orange-500" /> 🍽️ Dine-in
+          </label>
+          <label class="flex items-center gap-1.5 text-xs font-semibold text-slate-200 cursor-pointer">
+            <input type="radio" name="orderType" value="Takeaway" class="accent-orange-500" /> 🥡 Takeaway
+          </label>
+        </div>
+      </div>
+
+      <!-- STEP 3: MENU ITEMS -->
+      <div class="glass-card rounded-2xl p-5 shadow-xl space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="h-6 w-6 rounded-full brand-gradient text-xs font-bold flex items-center justify-center text-white">3</span>
+            <h2 class="text-base font-bold text-white">Select Items</h2>
+          </div>
+          <span class="text-xs text-orange-400 font-semibold">Fresh & Hygienic</span>
+        </div>
+
+        <div id="menu-list" class="space-y-3"></div>
+      </div>
+
+      <!-- CHECKOUT BAR -->
+      <div class="glass-card rounded-2xl p-5 border border-orange-500/30 flex items-center justify-between shadow-2xl">
+        <div>
+          <p class="text-xs text-slate-400">Total Payable</p>
+          <p class="text-2xl font-extrabold text-white">₹<span id="cart-total">0</span></p>
+        </div>
+        <button type="button" onclick="proceedToPayment()" id="pay-btn" class="brand-gradient hover:opacity-95 active:scale-95 text-white font-bold px-6 py-3.5 rounded-xl text-sm shadow-lg shadow-orange-500/25 transition">
+          Proceed to Pay →
+        </button>
+      </div>
+    </section>
+
+    <!-- ==================== PAYMENT & LIVE TRACKING VIEW ==================== -->
+    <section id="payment-view" class="hidden space-y-5">
+      <div id="pending-box" class="glass-card rounded-2xl p-6 text-center space-y-4 border border-orange-500/30">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 text-amber-400 text-xs font-bold">
+          <span class="h-2 w-2 rounded-full bg-amber-400 animate-ping"></span> Waiting for Payment Verification
+        </div>
+
+        <div>
+          <p class="text-xs text-slate-400">Order Token</p>
+          <h2 class="text-3xl font-extrabold text-white">#<span id="display-token">101</span></h2>
+        </div>
+
+        <div class="bg-white p-3 rounded-2xl inline-block shadow-xl">
+          <img id="upi-qr" src="" alt="UPI QR Code" class="w-52 h-52 mx-auto" />
+        </div>
+
+        <div class="space-y-1">
+          <p class="text-xs text-slate-400">Pay Exact Amount (for Auto-Verification)</p>
+          <p class="text-3xl font-extrabold text-orange-400">₹<span id="display-unique-amt">0.00</span></p>
+          <p class="text-[11px] text-slate-400">UPI ID: <span class="text-slate-200 font-semibold">9302565698@fam</span></p>
+        </div>
+
+        <div class="pt-2 flex flex-col sm:flex-row gap-3 justify-center">
+          <a id="upi-intent-link" href="#" class="brand-gradient text-white font-bold px-6 py-3 rounded-xl text-sm shadow-lg">
+            📲 Open UPI App to Pay
+          </a>
+          <button type="button" onclick="cancelAndBack()" class="px-5 py-3 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700">
+            ← Edit Order
+          </button>
+        </div>
+
+        <p class="text-[11px] text-slate-400 pt-2">Do not close this page. It will automatically confirm within 3–5 seconds after payment.</p>
+      </div>
+
+      <!-- CONFIRMED RECEIPT BOX -->
+      <div id="confirmed-box" class="hidden glass-card rounded-2xl p-6 text-center space-y-4 border border-emerald-500/40">
+        <div class="h-16 w-16 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-3xl mx-auto border border-emerald-500/40">
+          ✅
+        </div>
+        <div>
+          <span class="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold">PAYMENT VERIFIED</span>
+          <h2 class="text-2xl font-extrabold text-white mt-2">Order Confirmed!</h2>
+          <p class="text-xs text-slate-400 mt-1">Show this token at <strong class="text-white" id="conf-canteen">Fruit e Junction</strong> counter</p>
+        </div>
+
+        <div class="bg-slate-900/90 rounded-2xl p-4 border border-slate-800 max-w-sm mx-auto space-y-2 text-left text-xs">
+          <div class="flex justify-between">
+            <span class="text-slate-400">Token Number:</span>
+            <span class="font-extrabold text-orange-400 text-base">#<span id="conf-token">101</span></span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">Customer:</span>
+            <span class="font-semibold text-white" id="conf-customer">-</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">Items:</span>
+            <span class="font-semibold text-white text-right" id="conf-items">-</span>
+          </div>
+          <div class="flex justify-between border-t border-slate-800 pt-2">
+            <span class="text-slate-400">Amount Paid:</span>
+            <span class="font-bold text-emerald-400">₹<span id="conf-amt">0</span></span>
+          </div>
+        </div>
+
+        <button type="button" onclick="resetNewOrder()" class="brand-gradient text-white font-bold px-6 py-3 rounded-xl text-sm shadow-lg">
+          + Place Another Order
+        </button>
+      </div>
+    </section>
+
+    <!-- ==================== ADMIN DASHBOARD VIEW ==================== -->
+    <section id="admin-view" class="hidden space-y-5">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-xl font-extrabold text-white">Admin Dashboard</h2>
+          <p class="text-xs text-slate-400">Live Orders & Payment Tracking</p>
+        </div>
+        <div class="flex gap-2">
+          <button type="button" onclick="loadAdminOrders()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-white">🔄 Refresh</button>
+          <button type="button" onclick="switchView('order')" class="px-3.5 py-2 rounded-xl bg-orange-500/20 text-orange-400 text-xs font-bold">← Back to App</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-3">
+        <div class="glass-card p-4 rounded-2xl">
+          <p class="text-[11px] text-slate-400">Total Orders</p>
+          <p id="stat-total" class="text-xl font-extrabold text-white mt-0.5">0</p>
+        </div>
+        <div class="glass-card p-4 rounded-2xl">
+          <p class="text-[11px] text-slate-400">Paid Orders</p>
+          <p id="stat-paid" class="text-xl font-extrabold text-emerald-400 mt-0.5">0</p>
+        </div>
+        <div class="glass-card p-4 rounded-2xl">
+          <p class="text-[11px] text-slate-400">Total Revenue</p>
+          <p id="stat-rev" class="text-xl font-extrabold text-orange-400 mt-0.5">₹0</p>
+        </div>
+      </div>
+
+      <div id="admin-orders-list" class="space-y-3"></div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="text-center py-4 text-[11px] text-slate-500 border-t border-slate-800/60">
+    Powered by <span class="text-slate-300 font-semibold">CampusBite</span> • Team Infinity Minds
+  </footer>
+
+  <!-- ADMIN PASSWORD MODAL -->
+  <div id="admin-modal" class="fixed inset-0 z-50 hidden bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass-card rounded-2xl p-6 max-w-sm w-full space-y-4 border border-slate-700">
+      <h3 class="text-lg font-extrabold text-white">🔒 Admin Access</h3>
+      <p class="text-xs text-slate-400">Enter admin password to view live canteen orders.</p>
+      <input type="password" id="admin-pass-input" placeholder="Enter password" onkeydown="if(event.key==='Enter') verifyAdmin()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500" />
+      <p id="admin-pass-error" class="text-xs text-rose-400 hidden">Incorrect password. Try again.</p>
+      <div class="flex gap-2 justify-end">
+        <button type="button" onclick="closeAdminModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-xs font-semibold text-slate-300">Cancel</button>
+        <button type="button" onclick="verifyAdmin()" class="px-5 py-2 rounded-xl brand-gradient text-xs font-bold text-white">Unlock</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ==================== SUPABASE & APP CONFIG ====================
+    const SUPABASE_URL = "https://qnujpirgqokuziygjlgf.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_PT3_2YF4QbtOMLOpH4w1cg_vdRnL471";
+    const UPI_ID = "9302565698@fam";
+    const ADMIN_PASS = "Naitik@ishu08";
+
+    const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const MENUS = {
+      "Fruit e Junction": [
+        { id: "fc1", name: "Fruit Chaat", price: 29, desc: "Fresh seasonal fruits with tangy chaat masala" },
+        { id: "cc1", name: "Cream Chaat", price: 39, desc: "Rich fresh cream blended with diced fruits" },
+        { id: "pl1", name: "Fruit Platter", price: 49, desc: "Assorted premium fruit bowl with toppings" }
+      ]
+    };
+
+    let selectedRole = "Student";
+    let cart = {};
+    let activeOrderId = null;
+    let realtimeSub = null;
+
+    function renderMenu() {
+      const canteen = document.getElementById("canteen-select").value;
+      const items = MENUS[canteen] || [];
+      const container = document.getElementById("menu-list");
+      container.innerHTML = items.map(item => {
+        const qty = cart[item.id] || 0;
+        return `
+          <div class="flex items-center justify-between bg-slate-900/90 border border-slate-800 p-3.5 rounded-xl">
+            <div>
+              <h3 class="text-sm font-bold text-white">${item.name}</h3>
+              <p class="text-[11px] text-slate-400">${item.desc}</p>
+              <p class="text-sm font-extrabold text-orange-400 mt-1">₹${item.price}</p>
+            </div>
+            <div class="flex items-center gap-2.5 bg-slate-800 px-2.5 py-1.5 rounded-xl border border-slate-700">
+              <button type="button" onclick="updateQty('${item.id}', -1)" class="w-6 h-6 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-bold text-sm flex items-center justify-center">-</button>
+              <span class="text-sm font-bold text-white w-4 text-center">${qty}</span>
+              <button type="button" onclick="updateQty('${item.id}', 1)" class="w-6 h-6 rounded-lg brand-gradient text-white font-bold text-sm flex items-center justify-center">+</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+      updateTotal();
+    }
+
+    function updateQty(id, delta) {
+      cart[id] = Math.max(0, (cart[id] || 0) + delta);
+      renderMenu();
+    }
+
+    function updateTotal() {
+      const canteen = document.getElementById("canteen-select").value;
+      const items = MENUS[canteen] || [];
+      let total = 0;
+      items.forEach(i => { total += (cart[i.id] || 0) * i.price; });
+      document.getElementById("cart-total").innerText = total;
+    }
+
+    function selectRole(role) {
+      selectedRole = role;
+      document.querySelectorAll(".role-btn").forEach(btn => {
+        btn.className = "role-btn py-2.5 rounded-xl text-xs font-bold border border-slate-700 bg-slate-900 text-slate-400 transition";
+      });
+      document.getElementById("role-" + role).className = "role-btn py-2.5 rounded-xl text-xs font-bold border border-orange-500 bg-orange-500/20 text-orange-400 transition";
+    }
+
+    async function proceedToPayment() {
+      const canteen = document.getElementById("canteen-select").value;
+      const name = document.getElementById("cust-name").value.trim();
+      const phone = document.getElementById("cust-phone").value.trim();
+      const orderType = document.querySelector('input[name="orderType"]:checked').value;
+
+      const items = MENUS[canteen] || [];
+      const selectedItems = [];
+      let baseTotal = 0;
+
+      items.forEach(i => {
+        const qty = cart[i.id] || 0;
+        if (qty > 0) {
+          selectedItems.push({ name: i.name, price: i.price, qty });
+          baseTotal += qty * i.price;
+        }
+      });
+
+      if (!name) return alert("Please enter your name.");
+      if (!/^\d{10}$/.test(phone)) return alert("Please enter a valid 10-digit phone number.");
+      if (baseTotal <= 0) return alert("Please select at least 1 item from the menu.");
+
+      const payBtn = document.getElementById("pay-btn");
+      payBtn.disabled = true;
+      payBtn.innerText = "Creating Order...";
+
+      try {
+        const tokenNumber = Math.floor(100 + Math.random() * 900);
+        const paise = Math.floor(1 + Math.random() * 98);
+        const uniqueAmount = Number((baseTotal + paise / 100).toFixed(2));
+
+        const { data, error } = await db.from("orders").insert([{
+          token_number: tokenNumber,
+          canteen_name: canteen,
+          customer_role: selectedRole,
+          customer_name: name,
+          phone: phone,
+          items: selectedItems,
+          total_amount: baseTotal,
+          unique_amount: uniqueAmount,
+          order_type: orderType,
+          payment_status: "PENDING"
+        }]).select().single();
+
+        if (error) throw error;
+
+        activeOrderId = data.id;
+        showPaymentScreen(data);
+        listenForPaymentConfirmation(data.id);
+      } catch (err) {
+        alert("Error creating order: " + err.message);
+      } finally {
+        payBtn.disabled = false;
+        payBtn.innerText = "Proceed to Pay →";
+      }
+    }
+
+    function showPaymentScreen(order) {
+      switchView("payment");
+      document.getElementById("pending-box").classList.remove("hidden");
+      document.getElementById("confirmed-box").classList.add("hidden");
+
+      document.getElementById("display-token").innerText = order.token_number;
+      document.getElementById("display-unique-amt").innerText = order.unique_amount.toFixed(2);
+
+      const upiUrl = `upi://pay?pa=${UPI_ID}&pn=CampusBite&am=${order.unique_amount.toFixed(2)}&cu=INR&tn=Token${order.token_number}`;
+      document.getElementById("upi-intent-link").href = upiUrl;
+      document.getElementById("upi-qr").src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(upiUrl)}`;
+    }
+
+    function listenForPaymentConfirmation(orderId) {
+      if (realtimeSub) db.removeChannel(realtimeSub);
+
+      realtimeSub = db.channel("order-" + orderId)
+        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "orders", filter: `id=eq.${orderId}` }, payload => {
+                    if (payload.new.payment_status === "PAID") {
+            showConfirmedScreen(payload.new);
+          }
+        })
+        .subscribe();
+
+      const poll = setInterval(async () => {
+        if (!activeOrderId) return clearInterval(poll);
+        const { data } = await db.from("orders").select("*").eq("id", orderId).single();
+        if (data && data.payment_status === "PAID") {
+          clearInterval(poll);
+          showConfirmedScreen(data);
+        }
+      }, 3000);
+    }
+
+    function showConfirmedScreen(order) {
+      document.getElementById("pending-box").classList.add("hidden");
+      document.getElementById("confirmed-box").classList.remove("hidden");
+
+      document.getElementById("conf-canteen").innerText = order.canteen_name;
+      document.getElementById("conf-token").innerText = order.token_number;
+      document.getElementById("conf-customer").innerText = `${order.customer_name} (${order.customer_role})`;
+      document.getElementById("conf-items").innerText = order.items.map(i => `${i.qty}x ${i.name}`).join(", ");
+      document.getElementById("conf-amt").innerText = order.unique_amount.toFixed(2);
+    }
+
+    function cancelAndBack() {
+      activeOrderId = null;
+      switchView("order");
+    }
+
+    function resetNewOrder() {
+      activeOrderId = null;
+      cart = {};
+      renderMenu();
+      switchView("order");
+    }
+
+    function switchView(view) {
+      document.getElementById("order-view").classList.add("hidden");
+      document.getElementById("payment-view").classList.add("hidden");
+      document.getElementById("admin-view").classList.add("hidden");
+      document.getElementById(view + "-view").classList.remove("hidden");
+    }
+
+    function openAdminModal() {
+      document.getElementById("admin-pass-input").value = "";
+      document.getElementById("admin-pass-error").classList.add("hidden");
+      document.getElementById("admin-modal").classList.remove("hidden");
+    }
+
+    function closeAdminModal() {
+      document.getElementById("admin-modal").classList.add("hidden");
+    }
+
+    function verifyAdmin() {
+      const entered = document.getElementById("admin-pass-input").value;
+      if (entered === ADMIN_PASS) {
+        closeAdminModal();
+        switchView("admin");
+        loadAdminOrders();
+      } else {
+        document.getElementById("admin-pass-error").classList.remove("hidden");
+      }
+    }
+
+    async function loadAdminOrders() {
+      const { data: orders, error } = await db.from("orders").select("*").order("created_at", { ascending: false }).limit(50);
+      if (error) return alert("Failed to load orders: " + error.message);
+
+      const paidOrders = orders.filter(o => o.payment_status === "PAID");
+      const revenue = paidOrders.reduce((sum, o) => sum + Number(o.total_amount || 0), 0);
+
+      document.getElementById("stat-total").innerText = orders.length;
+      document.getElementById("stat-paid").innerText = paidOrders.length;
+      document.getElementById("stat-rev").innerText = "₹" + revenue;
+
+      const list = document.getElementById("admin-orders-list");
+      if (!orders.length) {
+        list.innerHTML = `<p class="text-center text-xs text-slate-400 py-8">No orders yet.</p>`;
+        return;
+      }
+
+      list.innerHTML = orders.map(o => {
+        const isPaid = o.payment_status === "PAID";
+        const itemsText = (o.items || []).map(i => `${i.qty}x ${i.name}`).join(", ");
+        const timeStr = new Date(o.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        return `
+          <div class="glass-card p-4 rounded-2xl border ${isPaid ? 'border-emerald-500/30' : 'border-amber-500/30'} space-y-2">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-0.5 rounded-lg bg-slate-800 text-orange-400 font-extrabold text-xs">#${o.token_number}</span>
+                <span class="text-xs font-bold text-white">${o.customer_name}</span>
+                <span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">${o.customer_role}</span>
+              </div>
+              <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full ${isPaid ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}">
+                ${o.payment_status}
+              </span>
+            </div>
+            <p class="text-xs text-slate-300">${itemsText} • <span class="text-slate-400">${o.order_type}</span></p>
+            <div class="flex items-center justify-between pt-1 border-t border-slate-800/80 text-xs">
+              <span class="text-slate-400">📞 ${o.phone} • ${timeStr} • <strong class="text-white">₹${Number(o.unique_amount).toFixed(2)}</strong></span>
+              ${!isPaid ? `<button type="button" onclick="markOrderPaid(${o.id})" class="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px]">✓ Mark Paid</button>` : ''}
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    async function markOrderPaid(id) {
+      await db.from("orders").update({ payment_status: "PAID" }).eq("id", id);
+      loadAdminOrders();
+    }
+
+    renderMenu();
+  </script>
+</body>
+</html>
+
+    
